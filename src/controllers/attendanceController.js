@@ -3,12 +3,12 @@ import cloudinary from "../utils/cloudinary.js";
 
 export const markAttendance = async (req, res) => {
   try {
-    const { studentName, status } = req.body;
+    const { studentRollNumber, status } = req.body;
 
-    if (!studentName || !status) {
+    if (!studentRollNumber || !status) {
       return res.status(400).json({
         success: false,
-        message: "studentName and status are required",
+        message: "studentRollNumber and status are required",
       });
     }
 
@@ -25,7 +25,7 @@ export const markAttendance = async (req, res) => {
     }
 
     const attendance = await Attendance.create({
-      studentName,
+      studentRollNumber,
       image: imageUrl,
       public_id: publicId,
       status,
@@ -61,4 +61,83 @@ export const getAStudents = async (req, res) => {
       message: error.message
     });
   }
+};
+
+// get Attendance Mark
+
+export const getAttendanceCount = async (req, res) => {
+  try {
+    const { studentRollNumber, status } = req.body;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const attendance = await Attendance.findByIdAndUpdate(
+      { student: studentRollNumber, date: today },
+      { status },
+      { upsert: true, new: true }
+
+    );
+    res.json({
+      success:true,
+      attendance,
+    });
+
+  } catch (error) {
+    res.status(500).json({message:error.message});
+
+  }
+};
+
+// attendance length count
+
+export const AttendanceCount = async(req,res)=>{
+  try {
+    const {studentRollNumber} = req.params;
+
+    const present = await Attendance.countDocuments({
+      student:studentRollNumber,
+      status: "present",
+    });
+     const absent = await Attendance.countDocuments({
+      student:studentRollNumber,
+      status: "absent",
+    });
+     const late = await Attendance.countDocuments({
+      student:studentRollNumber,
+      status: "late",
+    });
+
+    // const totalcount = await ({
+    //   student:studentRollNumber,
+    //   status:"present"+"absent"+"late",
+    // })
+    res.json({
+      present,
+      absent,
+      late,
+      total:present+absent+late,
+    });
+
+    
+  } catch (error) {
+    res.status(500).json({message:error.message});
+    
+  }
+
+};
+
+// select start and end date
+export const monthlyAttendance =async(studentRollNumber)=>{
+  try {
+    const {studentRollNumber,month,year} = req.query;
+    const start = new Date(year , month - 1,1);
+    const end  = new Date(year,month,0);
+    const data = await Attendance.find({
+      student:studentRollNumber,
+      date: { $gte:start , $lte:end} ,
+    });
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({message:error.message});
+  }
+
 };

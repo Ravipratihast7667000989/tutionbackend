@@ -11,7 +11,6 @@ export const createStudent = async (req, res) => {
     });
     console.log(student);
     
-
     res.status(201).json({
       success: true,
       message: "Student created successfully",
